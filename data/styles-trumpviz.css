@@ -1,0 +1,8 @@
+/* TrumpViz bits */
+.tt{position:fixed;pointer-events:none;background:#111;color:#fff;padding:10px 12px;border-radius:8px;font-size:13px;max-width:420px;line-height:1.35;box-shadow:0 8px 30px rgba(0,0,0,.2);z-index:9999}
+.tt .claim{font-weight:600;margin-bottom:6px}
+.tt .meta{color:#ddd;font-size:12px;margin-top:6px}
+.node.dim{opacity:.2}
+.link.dim{opacity:.05}
+.link.highlight{stroke:rgba(0,0,0,0.6);stroke-width:1.5}
+.badge{display:inline-block;padding:2px 6px;border-radius:6px;background:#f3f3f3;margin-left:6px}
