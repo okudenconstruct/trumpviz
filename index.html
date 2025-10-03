@@ -30,22 +30,33 @@
 
   <!-- load ZIP, unzip in browser, pass JSON directly to adapter -->
   <script>
-    fetch('data/claims.zip')
-      .then(r => r.arrayBuffer())
-      .then(buf => JSZip.loadAsync(buf))
-      .then(zip => zip.file('claims.json').async('string'))
-      .then(txt => {
-        const parsed = JSON.parse(txt);
-        TrumpAdapter.init('#viz', {
-          data: parsed
-          // Optional first-load filter to keep it snappy:
-          // ,filter: { category: 'Election', pinocchios: 4, start: '2020-01-01', end: '2020-12-31' }
-        });
-      })
-      .catch(err => {
-        console.error('Failed to load claims.zip:', err);
-        document.body.insertAdjacentHTML('beforeend', '<p style="color:red">Error loading data. See console.</p>');
+  fetch('data/claims.zip')
+    .then(r => r.arrayBuffer())
+    .then(buf => JSZip.loadAsync(buf))
+    .then(zip => zip.file('claims.json').async('string'))
+    .then(txt => {
+      // Fix invalid JSON tokens from the source (JSON must not contain NaN)
+      const cleaned = txt.replace(/\bNaN\b/g, 'null');
+
+      // Parse safely
+      const parsed = JSON.parse(cleaned);
+
+      // Optional: quick log so we can verify load success in the console
+      const nNodes = (parsed.nodes || []).length;
+      const nEdges = (parsed.edges || []).length;
+      console.log('Loaded claims.json → nodes:', nNodes, 'edges:', nEdges);
+
+      // Initialize the viz (add a starter filter if first load feels heavy)
+      TrumpAdapter.init('#viz', {
+        data: parsed
+        // ,filter: { category: 'Election', pinocchios: 4, start: '2020-01-01', end: '2020-12-31' }
       });
-  </script>
+    })
+    .catch(err => {
+      console.error('Failed to load claims.zip:', err);
+      document.body.insertAdjacentHTML('beforeend', '<p style="color:red">Error loading data. See console.</p>');
+    });
+</script>
+
 </body>
 </html>
