@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TrumpViz — BibViz-style arcs</title>
+  <link rel="stylesheet" href="data/styles-trumpviz.css">
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:20px}
+    h1{margin:0 0 6px 0;font-size:22px}
+    p{margin:0 0 12px 0;color:#444}
+    #wrap{overflow:auto}
+    #viz{width:1200px;height:900px;max-width:100%}
+  </style>
+</head>
+<body>
+  <h1>TrumpViz</h1>
+  <p>Interactive arcs linking repeated statements (starter)</p>
+
+  <div id="wrap">
+    <svg id="viz" width="1200" height="900"></svg>
+  </div>
+
+  <!-- libraries -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <!-- our adapter -->
+  <script src="js/trump-adapter.js"></script>
+
+  <!-- load ZIP, unzip in browser, pass JSON directly to adapter -->
+  <script>
+    fetch('data/claims.zip')
+      .then(r => r.arrayBuffer())
+      .then(buf => JSZip.loadAsync(buf))
+      .then(zip => zip.file('claims.json').async('string'))
+      .then(txt => {
+        const parsed = JSON.parse(txt);
+        TrumpAdapter.init('#viz', {
+          data: parsed
+          // Optional first-load filter to keep it snappy:
+          // ,filter: { category: 'Election', pinocchios: 4, start: '2020-01-01', end: '2020-12-31' }
+        });
+      })
+      .catch(err => {
+        console.error('Failed to load claims.zip:', err);
+        document.body.insertAdjacentHTML('beforeend', '<p style="color:red">Error loading data. See console.</p>');
+      });
+  </script>
+</body>
+</html>
