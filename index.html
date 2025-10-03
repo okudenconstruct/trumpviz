@@ -47,10 +47,10 @@
       console.log('Loaded claims.json → nodes:', nNodes, 'edges:', nEdges);
 
       // Initialize the viz (add a starter filter if first load feels heavy)
-      TrumpAdapter.init('#viz', {
-        data: parsed
-        // ,filter: { category: 'Election', pinocchios: 4, start: '2020-01-01', end: '2020-12-31' }
-      });
+     TrumpAdapter.init('#viz', {
+  data: parsed,
+  filter: { category: 'Election', pinocchios: 4, start: '2020-01-01', end: '2020-12-31' }
+});
     })
     .catch(err => {
       console.error('Failed to load claims.zip:', err);
