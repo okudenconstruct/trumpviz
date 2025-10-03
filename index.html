@@ -4,13 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TrumpViz — BibViz-style arcs</title>
+
+  <!-- Our small tooltip/highlight styles -->
   <link rel="stylesheet" href="data/styles-trumpviz.css">
+
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:20px}
     h1{margin:0 0 6px 0;font-size:22px}
     p{margin:0 0 12px 0;color:#444}
     #wrap{overflow:auto}
     #viz{width:1200px;height:900px;max-width:100%}
+    .note{font-size:12px;color:#666;margin-top:8px}
   </style>
 </head>
 <body>
@@ -20,43 +24,67 @@
   <div id="wrap">
     <svg id="viz" width="1200" height="900"></svg>
   </div>
+  <div class="note">Tip: this initial view shows a light subset so it renders fast. You can widen the filter later.</div>
 
-  <!-- libraries -->
+  <!-- Libraries -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
-  <!-- our adapter -->
+  <!-- Our adapter -->
   <script src="js/trump-adapter.js"></script>
 
-  <!-- load ZIP, unzip in browser, pass JSON directly to adapter -->
+  <!-- Load ZIP, sanitize JSON, start with a light default filter, and cap edges -->
   <script>
-  fetch('data/claims.zip')
-    .then(r => r.arrayBuffer())
-    .then(buf => JSZip.loadAsync(buf))
-    .then(zip => zip.file('claims.json').async('string'))
-    .then(txt => {
-      // Fix invalid JSON tokens from the source (JSON must not contain NaN)
-      const cleaned = txt.replace(/\bNaN\b/g, 'null');
+    // ---- Configuration you can tweak later ----
+    const DATA_ZIP_PATH = 'data/claims.zip';     // must contain a top-level file named exactly "claims.json"
+    const DEFAULT_FILTER = {                     // start light so it draws quickly
+      category: 'Election',
+      pinocchios: 4,
+      start: '2020-01-01',
+      end:   '2020-12-31'
+    };
 
-      // Parse safely
-      const parsed = JSON.parse(cleaned);
+    // After the viz initializes, enlarge dots and cap edges for readability.
+    // (This relies on code in trump-adapter.js that respects the filter; the edge cap is handled there.)
+    function initVizWithData(parsed){
+      // Hand the already-parsed JSON directly to the adapter
+      TrumpAdapter.init('#viz', {
+        data: parsed,
+        filter: DEFAULT_FILTER
+      });
+    }
 
-      // Optional: quick log so we can verify load success in the console
-      const nNodes = (parsed.nodes || []).length;
-      const nEdges = (parsed.edges || []).length;
-      console.log('Loaded claims.json → nodes:', nNodes, 'edges:', nEdges);
+    // ---- Helper to fetch + unzip + sanitize JSON (fix NaN -> null) ----
+    fetch(DATA_ZIP_PATH)
+      .then(r => {
+        if(!r.ok) throw new Error('Could not fetch ' + DATA_ZIP_PATH + ' (' + r.status + ')');
+        return r.arrayBuffer();
+      })
+      .then(buf => JSZip.loadAsync(buf))
+      .then(zip => {
+        const file = zip.file('claims.json');
+        if(!file) throw new Error('claims.json not found inside claims.zip (it must be at the top level).');
+        return file.async('string');
+      })
+      .then(txt => {
+        // Replace illegal JSON tokens (NaN) coming from the source file
+        const cleaned = txt.replace(/\bNaN\b/g, 'null');
 
-      // Initialize the viz (add a starter filter if first load feels heavy)
-     TrumpAdapter.init('#viz', {
-  data: parsed,
-  filter: { category: 'Election', pinocchios: 4, start: '2020-01-01', end: '2020-12-31' }
-});
-    })
-    .catch(err => {
-      console.error('Failed to load claims.zip:', err);
-      document.body.insertAdjacentHTML('beforeend', '<p style="color:red">Error loading data. See console.</p>');
-    });
-</script>
+        // Parse
+        const parsed = JSON.parse(cleaned);
+        const nNodes = (parsed.nodes || []).length;
+        const nEdges = (parsed.edges || []).length;
+        console.log('Loaded claims.json → nodes:', nNodes, 'edges:', nEdges);
 
+        initVizWithData(parsed);
+      })
+      .catch(err => {
+        console.error('Failed to load claims.zip:', err);
+        document.body.insertAdjacentHTML(
+          'beforeend',
+          '<p style="color:red;margin-top:10px">Error loading data: ' + String(err.message || err) + '</p>'
+        );
+      });
+  </script>
 </body>
 </html>
